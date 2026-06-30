@@ -1,0 +1,387 @@
+databaseChangeLog:
+  - changeSet:
+      id: cinema-1-cinemas
+      author: data-engineer
+      changes:
+        - createTable:
+            tableName: cinemas
+            columns:
+              - column:
+                  name: id
+                  type: SERIAL
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_cinemas
+              - column:
+                  name: name
+                  type: VARCHAR(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: city
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: address
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+      rollback:
+        - dropTable:
+            tableName: cinemas
+
+  - changeSet:
+      id: cinema-1-screens
+      author: data-engineer
+      changes:
+        - createTable:
+            tableName: screens
+            columns:
+              - column:
+                  name: id
+                  type: SERIAL
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_screens
+              - column:
+                  name: cinema_id
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+                    references: cinemas(id)
+                    foreignKeyName: fk_screens_cinema_id
+              - column:
+                  name: screen_number
+                  type: SMALLINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: capacity
+                  type: SMALLINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: screen_type
+                  type: VARCHAR(20)
+                  defaultValue: '2d'
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: screens
+            columnNames: cinema_id, screen_number
+            constraintName: uq_screens_cinema_screen_number
+        - sql:
+            sql: ALTER TABLE screens ADD CONSTRAINT chk_screens_capacity CHECK (capacity > 0);
+        - sql:
+            sql: ALTER TABLE screens ADD CONSTRAINT chk_screens_screen_type CHECK (screen_type IN ('2d', '3d', 'imax'));
+        - createIndex:
+            indexName: idx_screens_cinema_id
+            tableName: screens
+            columns:
+              - column:
+                  name: cinema_id
+      rollback:
+        - dropTable:
+            tableName: screens
+
+  - changeSet:
+      id: cinema-1-movies
+      author: data-engineer
+      changes:
+        - createTable:
+            tableName: movies
+            columns:
+              - column:
+                  name: id
+                  type: SERIAL
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_movies
+              - column:
+                  name: title
+                  type: VARCHAR(300)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: duration_minutes
+                  type: SMALLINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: release_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mpaa_rating
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: ALTER TABLE movies ADD CONSTRAINT chk_movies_duration CHECK (duration_minutes > 0);
+        - sql:
+            sql: ALTER TABLE movies ADD CONSTRAINT chk_movies_mpaa_rating CHECK (mpaa_rating IN ('G', 'PG', 'PG-13', 'R', 'NC-17'));
+      rollback:
+        - dropTable:
+            tableName: movies
+
+  - changeSet:
+      id: cinema-1-genres
+      author: data-engineer
+      changes:
+        - createTable:
+            tableName: genres
+            columns:
+              - column:
+                  name: id
+                  type: SERIAL
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_genres
+              - column:
+                  name: name
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+      rollback:
+        - dropTable:
+            tableName: genres
+
+  - changeSet:
+      id: cinema-1-movie-genres
+      author: data-engineer
+      changes:
+        - createTable:
+            tableName: movie_genres
+            columns:
+              - column:
+                  name: movie_id
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+                    references: movies(id)
+                    foreignKeyName: fk_movie_genres_movie_id
+              - column:
+                  name: genre_id
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+                    references: genres(id)
+                    foreignKeyName: fk_movie_genres_genre_id
+        - addPrimaryKey:
+            tableName: movie_genres
+            columnNames: movie_id, genre_id
+            constraintName: pk_movie_genres
+        - createIndex:
+            indexName: idx_movie_genres_genre_id
+            tableName: movie_genres
+            columns:
+              - column:
+                  name: genre_id
+      rollback:
+        - dropTable:
+            tableName: movie_genres
+
+  - changeSet:
+      id: cinema-1-customers
+      author: data-engineer
+      changes:
+        - createTable:
+            tableName: customers
+            columns:
+              - column:
+                  name: id
+                  type: SERIAL
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_customers
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: full_name
+                  type: VARCHAR(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: phone
+                  type: VARCHAR(20)
+              - column:
+                  name: membership_tier
+                  type: VARCHAR(20)
+                  defaultValue: 'standard'
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: ALTER TABLE customers ADD CONSTRAINT chk_customers_membership_tier CHECK (membership_tier IN ('standard', 'silver', 'gold'));
+      rollback:
+        - dropTable:
+            tableName: customers
+
+  - changeSet:
+      id: cinema-1-showtimes
+      author: data-engineer
+      changes:
+        - createTable:
+            tableName: showtimes
+            columns:
+              - column:
+                  name: id
+                  type: SERIAL
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_showtimes
+              - column:
+                  name: screen_id
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+                    references: screens(id)
+                    foreignKeyName: fk_showtimes_screen_id
+              - column:
+                  name: movie_id
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+                    references: movies(id)
+                    foreignKeyName: fk_showtimes_movie_id
+              - column:
+                  name: start_time
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+              - column:
+                  name: base_price
+                  type: NUMERIC(8, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: 'scheduled'
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: ALTER TABLE showtimes ADD CONSTRAINT chk_showtimes_base_price CHECK (base_price >= 0);
+        - sql:
+            sql: ALTER TABLE showtimes ADD CONSTRAINT chk_showtimes_status CHECK (status IN ('scheduled', 'cancelled', 'completed'));
+        - createIndex:
+            indexName: idx_showtimes_screen_id
+            tableName: showtimes
+            columns:
+              - column:
+                  name: screen_id
+        - createIndex:
+            indexName: idx_showtimes_movie_id
+            tableName: showtimes
+            columns:
+              - column:
+                  name: movie_id
+      rollback:
+        - dropTable:
+            tableName: showtimes
+
+  - changeSet:
+      id: cinema-1-bookings
+      author: data-engineer
+      changes:
+        - createTable:
+            tableName: bookings
+            columns:
+              - column:
+                  name: id
+                  type: SERIAL
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_bookings
+              - column:
+                  name: customer_id
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+                    references: customers(id)
+                    foreignKeyName: fk_bookings_customer_id
+              - column:
+                  name: showtime_id
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+                    references: showtimes(id)
+                    foreignKeyName: fk_bookings_showtime_id
+              - column:
+                  name: booked_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: 'confirmed'
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_amount
+                  type: NUMERIC(8, 2)
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: ALTER TABLE bookings ADD CONSTRAINT chk_bookings_status CHECK (status IN ('confirmed', 'cancelled', 'checked_in'));
+        - sql:
+            sql: ALTER TABLE bookings ADD CONSTRAINT chk_bookings_total_amount CHECK (total_amount >= 0);
+        - createIndex:
+            indexName: idx_bookings_customer_id
+            tableName: bookings
+            columns:
+              - column:
+                  name: customer_id
+        - createIndex:
+            indexName: idx_bookings_showtime_id
+            tableName: bookings
+            columns:
+              - column:
+                  name: showtime_id
+      rollback:
+        - dropTable:
+            tableName: bookings

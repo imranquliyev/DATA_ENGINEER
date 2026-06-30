@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: de-postgres
+    environment:
+      POSTGRES_USER: deuser
+      POSTGRES_PASSWORD: depass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U deuser"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  flyway:
+    image: flyway/flyway:10-alpine
+    container_name: de-flyway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./flyway/conf:/flyway/conf:ro
+      - ./flyway/sql:/flyway/sql:ro
+    entrypoint: ["flyway"]
+    profiles: ["tools"]
+
+  liquibase:
+    image: liquibase/liquibase:4.29
+    container_name: de-liquibase
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./liquibase/conf:/liquibase/conf:ro
+      - ./liquibase/changelog:/liquibase/changelog:ro
+    entrypoint: ["liquibase"]
+    profiles: ["tools"]
+
+volumes:
+  pgdata:

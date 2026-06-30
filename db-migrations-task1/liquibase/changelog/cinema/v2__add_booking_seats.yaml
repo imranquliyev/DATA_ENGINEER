@@ -1,0 +1,98 @@
+databaseChangeLog:
+  - changeSet:
+      id: cinema-2-booking-seats
+      author: data-engineer
+      changes:
+        - createTable:
+            tableName: booking_seats
+            columns:
+              - column:
+                  name: id
+                  type: SERIAL
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_booking_seats
+              - column:
+                  name: booking_id
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+                    references: bookings(id)
+                    foreignKeyName: fk_booking_seats_booking_id
+              - column:
+                  name: seat_row
+                  type: CHAR(1)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seat_number
+                  type: SMALLINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: NUMERIC(8, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: ALTER TABLE booking_seats ADD CONSTRAINT chk_booking_seats_seat_row CHECK (seat_row ~ '^[A-Z]$');
+        - sql:
+            sql: ALTER TABLE booking_seats ADD CONSTRAINT chk_booking_seats_seat_number CHECK (seat_number > 0);
+        - sql:
+            sql: ALTER TABLE booking_seats ADD CONSTRAINT chk_booking_seats_price CHECK (price >= 0);
+        - addUniqueConstraint:
+            tableName: booking_seats
+            columnNames: booking_id, seat_row, seat_number
+            constraintName: uq_booking_seats_booking_seat
+        - createIndex:
+            indexName: idx_booking_seats_booking_id
+            tableName: booking_seats
+            columns:
+              - column:
+                  name: booking_id
+      rollback:
+        - dropTable:
+            tableName: booking_seats
+
+  - changeSet:
+      id: cinema-2-upcoming-bookings-view
+      author: data-engineer
+      runOnChange: true
+      changes:
+        - createView:
+            replaceIfExists: true
+            viewName: upcoming_bookings_view
+            selectQuery: |
+              SELECT
+                  b.id                                              AS booking_id,
+                  c.full_name                                       AS customer_name,
+                  c.email                                           AS customer_email,
+                  m.title                                           AS movie_title,
+                  cin.name                                          AS cinema_name,
+                  cin.city                                          AS cinema_city,
+                  s.start_time                                      AS showtime_start,
+                  b.status                                          AS booking_status,
+                  b.total_amount,
+                  ROUND(
+                      EXTRACT(EPOCH FROM (s.start_time - NOW())) / 3600.0,
+                      2
+                  )                                                 AS hours_until_show,
+                  m.title || ' @ ' || cin.name || ' (' || cin.city || ')' AS booking_summary
+              FROM bookings b
+              JOIN customers c  ON c.id  = b.customer_id
+              JOIN showtimes s  ON s.id  = b.showtime_id
+              JOIN movies m     ON m.id  = s.movie_id
+              JOIN screens sc   ON sc.id = s.screen_id
+              JOIN cinemas cin  ON cin.id = sc.cinema_id
+              WHERE b.status = 'confirmed'
+                AND s.start_time > NOW()
+                AND s.status = 'scheduled'
+      rollback:
+        - sql:
+            sql: DROP VIEW IF EXISTS upcoming_bookings_view;

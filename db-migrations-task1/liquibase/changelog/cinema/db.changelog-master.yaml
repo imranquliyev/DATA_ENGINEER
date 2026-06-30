@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: v1__create_core_tables.yaml
+  - include:
+      file: v2__add_booking_seats.yaml
+  - include:
+      file: v3__seed_reference_data.yaml
