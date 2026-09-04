@@ -7,11 +7,22 @@ from src.common.logger import get_logger
 logger = get_logger("database_common")
 
 
+def _resolve_host(configured_host: str) -> str:
+    """Tries resolving container hostname; falls back to localhost if running outside docker."""
+    try:
+        import socket
+        socket.gethostbyname(configured_host)
+        return configured_host
+    except Exception:
+        return "localhost"
+
+
 def get_postgres_connection():
     """Returns a connection to PostgreSQL staging database."""
     settings = get_settings()
+    host = _resolve_host(settings.postgres_host)
     return psycopg2.connect(
-        host=settings.postgres_host,
+        host=host,
         port=settings.postgres_port,
         user=settings.postgres_user,
         password=settings.postgres_password,
@@ -22,8 +33,9 @@ def get_postgres_connection():
 def get_clickhouse_client():
     """Returns a ClickHouse connect client."""
     settings = get_settings()
+    host = _resolve_host(settings.clickhouse_host)
     return clickhouse_connect.get_client(
-        host=settings.clickhouse_host,
+        host=host,
         port=settings.clickhouse_http_port,
         username=settings.clickhouse_user,
         password=settings.clickhouse_password,
@@ -34,9 +46,10 @@ def get_clickhouse_client():
 def get_minio_client():
     """Returns boto3 S3 client configured for MinIO."""
     settings = get_settings()
+    host = _resolve_host(settings.minio_host)
     return boto3.client(
         's3',
-        endpoint_url=f"http://{settings.minio_host}:{settings.minio_port}",
+        endpoint_url=f"http://{host}:{settings.minio_port}",
         aws_access_key_id=settings.minio_root_user,
         aws_secret_access_key=settings.minio_root_password,
         region_name='us-east-1'

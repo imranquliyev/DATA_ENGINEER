@@ -32,13 +32,13 @@ services:
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD-SHELL", "mc ready local || exit 0"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   minio-create-buckets:
-    image: minio/mc:RELEASE.2024-03-03T20-12-40Z
+    image: minio/mc:RELEASE.2024-01-16T16-06-34Z
     container_name: fastroute_minio_buckets
     depends_on:
       minio:
@@ -67,7 +67,7 @@ services:
       - clickhouse_data:/var/lib/clickhouse
       - ./config/clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8123/ping || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -80,7 +80,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      AIRFLOW__CORE__DATABASE_SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-fastroute_user}:${POSTGRES_PASSWORD:-fastroute_password}@postgres:5432/${POSTGRES_DB:-fastroute_db}
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-fastroute_user}:${POSTGRES_PASSWORD:-fastroute_password}@postgres:5432/${POSTGRES_DB:-fastroute_db}
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-46GadBkiBicSIip2Yzc7U-zW465_VGGBfV6_r9bE1_4=}
@@ -109,7 +109,7 @@ services:
       airflow-webserver:
         condition: service_healthy
     environment:
-      AIRFLOW__CORE__DATABASE_SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-fastroute_user}:${POSTGRES_PASSWORD:-fastroute_password}@postgres:5432/${POSTGRES_DB:-fastroute_db}
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-fastroute_user}:${POSTGRES_PASSWORD:-fastroute_password}@postgres:5432/${POSTGRES_DB:-fastroute_db}
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     volumes:
