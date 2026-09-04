@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Environment & Credentials
+.env
+*.pem
+*.key
+*.crt
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
+
+# Docker & Volume mounts
+.data/
+pg_data/
+minio_data/
+clickhouse_data/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Airflow logs
+airflow_logs/
+logs/
+*.log
