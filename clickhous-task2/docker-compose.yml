@@ -1,0 +1,44 @@
+# version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: benchmark_postgres
+    environment:
+      POSTGRES_DB: benchmark_db
+      POSTGRES_USER: bench_user
+      POSTGRES_PASSWORD: bench_password
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+    command: >
+      postgres
+      -c max_worker_processes=4
+      -c max_parallel_workers_per_gather=4
+      -c shared_buffers=2GB
+      -c work_mem=64MB
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3-alpine
+    container_name: benchmark_clickhouse
+    environment:
+      CLICKHOUSE_DB: benchmark_db
+      CLICKHOUSE_USER: bench_user
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      CLICKHOUSE_PASSWORD: bench_password
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144

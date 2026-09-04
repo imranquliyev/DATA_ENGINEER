@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClickHouse vs PostgreSQL — Analytical Benchmark Dashboard</title>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-pg: #3b82f6;
+            --accent-ch: #f59e0b;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(245, 158, 11, 0.12) 0px, transparent 50%);
+        }
+
+        header {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #60a5fa, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--card-border);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20rem;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--text-secondary);
+        }
+
+        .dot.online {
+            background-color: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 0.5rem;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            color: var(--text-primary);
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .preset-select {
+            background: #0f172a;
+            color: var(--text-primary);
+            border: 1px solid var(--card-border);
+            padding: 0.6rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            width: 100%;
+            margin-bottom: 1rem;
+            outline: none;
+        }
+
+        .sql-editor {
+            font-family: 'JetBrains Mono', monospace;
+            background: #090d16;
+            color: #38bdf8;
+            border: 1px solid var(--card-border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            width: 100%;
+            height: 100px;
+            resize: vertical;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .speedup-banner {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 1rem;
+        }
+
+        .speedup-banner.pg-win {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .latency-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .data-table-container {
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 0.5rem;
+            border: 1px solid var(--card-border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            text-align: left;
+        }
+
+        th {
+            background: #090d16;
+            color: var(--text-secondary);
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        td {
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: #cbd5e1;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .btn-small {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.3rem;
+            cursor: pointer;
+        }
+
+        .btn-small:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-bolt-lightning"></i> ClickHouse vs PostgreSQL Benchmark UI
+        </div>
+        <div class="status-bar">
+            <div class="status-badge">
+                <div class="dot" id="dot-pg"></div> PostgreSQL 16: <strong id="pg-rows-cnt">Checking...</strong>
+            </div>
+            <div class="status-badge">
+                <div class="dot" id="dot-ch"></div> ClickHouse: <strong id="ch-rows-cnt">Checking...</strong>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('live-benchmark')"><i class="fa-solid fa-play"></i> Live Query Runner</button>
+            <button class="tab-btn" onclick="switchTab('data-explorer')"><i class="fa-solid fa-database"></i> Real Data Explorer</button>
+            <button class="tab-btn" onclick="switchTab('analytics')"><i class="fa-solid fa-chart-column"></i> Stored Analytics Charts</button>
+        </div>
+
+        <!-- TAB 1: Live Query Runner -->
+        <div id="live-benchmark" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-list-check"></i> Select Analytical Query Preset</div>
+                </div>
+                <select class="preset-select" id="preset-select" onchange="onPresetChange()">
+                    <option value="Q1">Q1: Full-Table Aggregation (SUM, AVG over 10M rows)</option>
+                    <option value="Q2">Q2: Filtered Aggregation (Date range & store grouping)</option>
+                    <option value="Q3">Q3: High-Cardinality GROUP BY (100k customer groups)</option>
+                    <option value="Q4">Q4: Star Join (2 Dimensions: Store & Product)</option>
+                    <option value="Q5">Q5: Full Star Join (All 4 Dimensions)</option>
+                    <option value="Q6">Q6: Top-N Ranking (ORDER BY + LIMIT 10)</option>
+                    <option value="Q7">Q7: Window Function (Month-over-Month trend)</option>
+                    <option value="Q8">Q8: Point Lookup (WHERE sale_id = 5432100 - PG Index Winner!)</option>
+                </select>
+
+                <div class="grid-2">
+                    <div>
+                        <label style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.4rem; display:block;">PostgreSQL SQL Query:</label>
+                        <textarea class="sql-editor" id="pg-sql"></textarea>
+                    </div>
+                    <div>
+                        <label style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.4rem; display:block;">ClickHouse SQL Query:</label>
+                        <textarea class="sql-editor" id="ch-sql"></textarea>
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <button class="btn-primary" onclick="runLiveQuery()"><i class="fa-solid fa-rocket"></i> Run Live Benchmark Query</button>
+                    <span id="run-status" style="font-size:0.9rem; color:var(--text-secondary);"></span>
+                </div>
+
+                <div class="speedup-banner" id="speedup-banner" style="display:none;">
+                    <div>
+                        <div style="font-size:0.85rem; color:var(--text-secondary);" id="winner-title">Winner Result</div>
+                        <div style="font-size:1.2rem; font-weight:800;" id="winner-text">ClickHouse is 15.57x Faster!</div>
+                    </div>
+                    <div style="display:flex; gap:2rem;">
+                        <div>Postgres: <span class="latency-badge" id="pg-lat-text">-- ms</span></div>
+                        <div>ClickHouse: <span class="latency-badge" id="ch-lat-text" style="color:var(--accent-ch);">-- ms</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Results Side-by-Side Tables -->
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title" style="color:var(--accent-pg);"><i class="fa-solid fa-elephant"></i> PostgreSQL Live Result</div>
+                        <span id="pg-count-badge" style="font-size:0.8rem; color:var(--text-secondary);">0 rows</span>
+                    </div>
+                    <div class="data-table-container">
+                        <table id="pg-result-table">
+                            <thead><tr><th>Results will appear here...</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title" style="color:var(--accent-ch);"><i class="fa-solid fa-bolt"></i> ClickHouse Live Result</div>
+                        <span id="ch-count-badge" style="font-size:0.8rem; color:var(--text-secondary);">0 rows</span>
+                    </div>
+                    <div class="data-table-container">
+                        <table id="ch-result-table">
+                            <thead><tr><th>Results will appear here...</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Real Data Explorer -->
+        <div id="data-explorer" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-table"></i> Real Data Table Browser</div>
+                    <div style="display:flex; gap:1rem;">
+                        <select class="preset-select" id="table-select" style="width: auto; margin-bottom:0;" onchange="loadTableData(1)">
+                            <option value="fact_sales">fact_sales (10,000,000 Rows)</option>
+                            <option value="dim_customer">dim_customer (100,000 Rows)</option>
+                            <option value="dim_product">dim_product (50,000 Rows)</option>
+                            <option value="dim_store">dim_store (1,000 Rows)</option>
+                            <option value="dim_date">dim_date (1,095 Rows)</option>
+                        </select>
+                        <select class="preset-select" id="db-select" style="width: auto; margin-bottom:0;" onchange="loadTableData(1)">
+                            <option value="postgres">PostgreSQL 16 Engine</option>
+                            <option value="clickhouse">ClickHouse Engine</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="data-table-container">
+                    <table id="explorer-table">
+                        <thead><tr><th>Loading...</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="pagination">
+                    <button class="btn-small" onclick="prevPage()"><i class="fa-solid fa-chevron-left"></i> Previous</button>
+                    <span style="font-size:0.85rem; color:var(--text-secondary);" id="page-info">Page 1</span>
+                    <button class="btn-small" onclick="nextPage()">Next <i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Benchmark Analytics & Charts -->
+        <div id="analytics" class="tab-content">
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fa-solid fa-chart-column"></i> Median Query Latency (Log Scale)</div>
+                    </div>
+                    <canvas id="chart-latency" height="220"></canvas>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fa-solid fa-gauge-high"></i> ClickHouse Speedup Multipliers</div>
+                    </div>
+                    <canvas id="chart-speedup" height="220"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let presets = {};
+        let currentPage = 1;
+
+        async function init() {
+            // Fetch Status
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                if(data.postgres) {
+                    document.getElementById('dot-pg').classList.add('online');
+                    document.getElementById('pg-rows-cnt').innerText = data.pg_rows.toLocaleString() + ' rows';
+                }
+                if(data.clickhouse) {
+                    document.getElementById('dot-ch').classList.add('online');
+                    document.getElementById('ch-rows-cnt').innerText = data.ch_rows.toLocaleString() + ' rows';
+                }
+            } catch(e) {}
+
+            // Fetch Presets
+            try {
+                const res = await fetch('/api/presets');
+                presets = await res.json();
+                onPresetChange();
+            } catch(e) {}
+
+            loadAnalyticsCharts();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.currentTarget.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+
+            if(tabId === 'data-explorer') {
+                loadTableData(currentPage);
+            }
+        }
+
+        function onPresetChange() {
+            const key = document.getElementById('preset-select').value;
+            if(presets[key]) {
+                document.getElementById('pg-sql').value = presets[key].pg;
+                document.getElementById('ch-sql').value = presets[key].ch;
+            }
+        }
+
+        async function runLiveQuery() {
+            const pgSql = document.getElementById('pg-sql').value;
+            const chSql = document.getElementById('ch-sql').value;
+            const statusEl = document.getElementById('run-status');
+            
+            statusEl.innerText = "Executing queries concurrently...";
+            document.getElementById('speedup-banner').style.display = 'none';
+
+            try {
+                const res = await fetch('/api/query/run', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ pg_sql: pgSql, ch_sql: chSql })
+                });
+                const data = await res.json();
+                statusEl.innerText = "";
+
+                // Render Postgres Table
+                if(data.postgres && !data.postgres.error) {
+                    renderTable('pg-result-table', data.postgres.columns, data.postgres.rows);
+                    document.getElementById('pg-lat-text').innerText = data.postgres.latency_ms + ' ms';
+                    document.getElementById('pg-count-badge').innerText = data.postgres.total_rows + ' rows';
+                }
+
+                // Render ClickHouse Table
+                if(data.clickhouse && !data.clickhouse.error) {
+                    renderTable('ch-result-table', data.clickhouse.columns, data.clickhouse.rows);
+                    document.getElementById('ch-lat-text').innerText = data.clickhouse.latency_ms + ' ms';
+                    document.getElementById('ch-count-badge').innerText = data.clickhouse.total_rows + ' rows';
+                }
+
+                // Speedup Banner
+                if(data.speedup_ratio) {
+                    const banner = document.getElementById('speedup-banner');
+                    const winnerText = document.getElementById('winner-text');
+                    const winnerTitle = document.getElementById('winner-title');
+
+                    if(data.speedup_ratio >= 1.0) {
+                        banner.className = "speedup-banner";
+                        winnerTitle.innerText = "OLAP Winner Result";
+                        winnerText.innerText = `ClickHouse is ${data.speedup_ratio}x Faster than PostgreSQL!`;
+                    } else {
+                        banner.className = "speedup-banner pg-win";
+                        winnerTitle.innerText = "Point Index Winner Result";
+                        const pgRatio = (1.0 / data.speedup_ratio).toFixed(2);
+                        winnerText.innerText = `PostgreSQL B-Tree Index is ${pgRatio}x Faster than ClickHouse!`;
+                    }
+                    banner.style.display = 'flex';
+                }
+            } catch(e) {
+                statusEl.innerText = "Error running queries: " + e;
+            }
+        }
+
+        function renderTable(tableId, cols, rows) {
+            const table = document.getElementById(tableId);
+            let headHtml = "<thead><tr>" + cols.map(c => `<th>${c}</th>`).join('') + "</tr></thead>";
+            let bodyHtml = "<tbody>" + rows.map(r => "<tr>" + r.map(v => `<td>${v}</td>`).join('') + "</tr>").join('') + "</tbody>";
+            table.innerHTML = headHtml + bodyHtml;
+        }
+
+        async function loadTableData(page) {
+            currentPage = page;
+            const tableName = document.getElementById('table-select').value;
+            const dbName = document.getElementById('db-select').value;
+
+            try {
+                const res = await fetch(`/api/data/${tableName}?db=${dbName}&page=${page}&limit=20`);
+                const data = await res.json();
+
+                renderTable('explorer-table', data.columns, data.rows);
+                document.getElementById('page-info').innerText = `Page ${data.page} (Loaded in ${data.latency_ms} ms)`;
+            } catch(e) {}
+        }
+
+        function prevPage() { if(currentPage > 1) loadTableData(currentPage - 1); }
+        function nextPage() { loadTableData(currentPage + 1); }
+
+        async function loadAnalyticsCharts() {
+            try {
+                const res = await fetch('/api/benchmark/summary');
+                const data = await res.json();
+
+                const labels = data.queries.map(q => q.query_key);
+                const pgData = data.queries.map(q => q.pg_median_ms);
+                const chData = data.queries.map(q => q.ch_median_ms);
+                const speedupData = data.queries.map(q => q.speedup_ratio);
+
+                // Latency Chart
+                new Chart(document.getElementById('chart-latency'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'PostgreSQL Median (ms)', data: pgData, backgroundColor: '#3b82f6' },
+                            { label: 'ClickHouse Median (ms)', data: chData, backgroundColor: '#f59e0b' }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: { y: { type: 'logarithmic' } },
+                        plugins: { legend: { labels: { color: '#f8fafc' } } }
+                    }
+                });
+
+                // Speedup Chart
+                new Chart(document.getElementById('chart-speedup'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'ClickHouse Speedup Multiplier',
+                            data: speedupData,
+                            backgroundColor: speedupData.map(v => v >= 1.0 ? '#10b981' : '#3b82f6')
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { labels: { color: '#f8fafc' } } }
+                    }
+                });
+            } catch(e) {}
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+<clickhouse>
+    <!-- Resource and Thread Limits for Benchmark Container -->
+    <max_thread_pool_size>10000</max_thread_pool_size>
+    <max_server_memory_usage>3758096384</max_server_memory_usage> <!-- ~3.5 GB -->
+    
+    <profiles>
+        <default>
+            <max_threads>4</max_threads>
+            <max_execution_time>300</max_execution_time>
+            <memory_profiler_step>4194304</memory_profiler_step>
+        </default>
+    </profiles>
+</clickhouse>

@@ -1,0 +1,268 @@
+{
+  "timestamp": "2026-09-04 10:59:52",
+  "queries": [
+    {
+      "query_key": "Q1_Full_Table_Agg",
+      "category": "Full-table aggregation",
+      "description": "Global SUM, AVG, MIN, MAX over all 10M rows in fact_sales",
+      "pg_cold_ms": 1432.2081019927282,
+      "pg_warm_times_ms": [
+        1395.5493690009462,
+        1177.7128810063004,
+        1244.611663001706,
+        1335.0428520061541,
+        1129.585381000652
+      ],
+      "pg_median_ms": 1244.611663001706,
+      "pg_min_ms": 1129.585381000652,
+      "pg_max_ms": 1395.5493690009462,
+      "ch_cold_ms": 145.48305999778677,
+      "ch_warm_times_ms": [
+        77.87548100168351,
+        85.34792900900356,
+        81.5741949918447,
+        83.61852599773556,
+        98.76086299482267
+      ],
+      "ch_median_ms": 83.61852599773556,
+      "ch_min_ms": 77.87548100168351,
+      "ch_max_ms": 98.76086299482267,
+      "speedup_ratio": 14.884400892637245,
+      "row_count_pg": 1,
+      "row_count_ch": 1
+    },
+    {
+      "query_key": "Q2_Filtered_Agg",
+      "category": "Filtered aggregation",
+      "description": "Selective date range aggregation grouped by store_id",
+      "pg_cold_ms": 1452.3022479988867,
+      "pg_warm_times_ms": [
+        1650.2207010053098,
+        2268.9734809973743,
+        1140.774818995851,
+        946.5440210042289,
+        1257.8164430015022
+      ],
+      "pg_median_ms": 1257.8164430015022,
+      "pg_min_ms": 946.5440210042289,
+      "pg_max_ms": 2268.9734809973743,
+      "ch_cold_ms": 111.09623599622864,
+      "ch_warm_times_ms": [
+        71.65271700068843,
+        107.47221000201534,
+        89.08190699003171,
+        90.64483700785786,
+        85.42119900812395
+      ],
+      "ch_median_ms": 89.08190699003171,
+      "ch_min_ms": 71.65271700068843,
+      "ch_max_ms": 107.47221000201534,
+      "speedup_ratio": 14.119774547959016,
+      "row_count_pg": 1000,
+      "row_count_ch": 1000
+    },
+    {
+      "query_key": "Q3_High_Cardinality_GroupBy",
+      "category": "GROUP BY with high cardinality",
+      "description": "Aggregation producing 100k distinct customer_id groups",
+      "pg_cold_ms": 1744.4997580023482,
+      "pg_warm_times_ms": [
+        1834.0049769903999,
+        1842.2067770006834,
+        2070.671039997251,
+        2439.2711570108077,
+        2665.9174529922893
+      ],
+      "pg_median_ms": 2070.671039997251,
+      "pg_min_ms": 1834.0049769903999,
+      "pg_max_ms": 2665.9174529922893,
+      "ch_cold_ms": 394.42500899895094,
+      "ch_warm_times_ms": [
+        324.62835899787024,
+        230.18783499719575,
+        198.1586170004448,
+        206.58649499819148,
+        224.6949390100781
+      ],
+      "ch_median_ms": 224.6949390100781,
+      "ch_min_ms": 198.1586170004448,
+      "ch_max_ms": 324.62835899787024,
+      "speedup_ratio": 9.215476989022775,
+      "row_count_pg": 1000,
+      "row_count_ch": 1000
+    },
+    {
+      "query_key": "Q4_Star_Join_2_Dims",
+      "category": "Star join",
+      "description": "fact_sales joined to dim_store and dim_product with region and category aggregation",
+      "pg_cold_ms": 3613.5036060004495,
+      "pg_warm_times_ms": [
+        3355.5862990033347,
+        3244.8885120102204,
+        3000.2667600056157,
+        3095.8297320030397,
+        2774.0721440059133
+      ],
+      "pg_median_ms": 3095.8297320030397,
+      "pg_min_ms": 2774.0721440059133,
+      "pg_max_ms": 3355.5862990033347,
+      "ch_cold_ms": 524.3961590022082,
+      "ch_warm_times_ms": [
+        483.8055260042893,
+        448.22535700222943,
+        469.51308399729896,
+        465.9590759983985,
+        504.5164840121288
+      ],
+      "ch_median_ms": 469.51308399729896,
+      "ch_min_ms": 448.22535700222943,
+      "ch_max_ms": 504.5164840121288,
+      "speedup_ratio": 6.593702790231187,
+      "row_count_pg": 40,
+      "row_count_ch": 40
+    },
+    {
+      "query_key": "Q5_Full_Star_Join_4_Dims",
+      "category": "Full star join",
+      "description": "fact_sales joined to all 4 dimensions with multi-attribute filtering and grouping",
+      "pg_cold_ms": 1997.826624996378,
+      "pg_warm_times_ms": [
+        1994.6278389979852,
+        2372.31660199177,
+        2208.788577001542,
+        2308.3499210042646,
+        2342.727184004616
+      ],
+      "pg_median_ms": 2308.3499210042646,
+      "pg_min_ms": 1994.6278389979852,
+      "pg_max_ms": 2372.31660199177,
+      "ch_cold_ms": 636.639706994174,
+      "ch_warm_times_ms": [
+        646.5311059873784,
+        490.6599950045347,
+        479.48983500828035,
+        413.7867489916971,
+        416.5467700076988
+      ],
+      "ch_median_ms": 479.48983500828035,
+      "ch_min_ms": 413.7867489916971,
+      "ch_max_ms": 646.5311059873784,
+      "speedup_ratio": 4.814179055462983,
+      "row_count_pg": 100,
+      "row_count_ch": 100
+    },
+    {
+      "query_key": "Q6_TopN_Ranking",
+      "category": "Top-N / ORDER BY + LIMIT",
+      "description": "Top 10 highest revenue store-product combinations",
+      "pg_cold_ms": 4148.535418993561,
+      "pg_warm_times_ms": [
+        4115.223949003848,
+        4109.861632008688,
+        4003.5910529986722,
+        4225.08970600029,
+        3850.3409489931073
+      ],
+      "pg_median_ms": 4109.861632008688,
+      "pg_min_ms": 3850.3409489931073,
+      "pg_max_ms": 4225.08970600029,
+      "ch_cold_ms": 246.81814899668097,
+      "ch_warm_times_ms": [
+        225.48327900585718,
+        187.42967299476732,
+        151.4475849980954,
+        146.03314199484885,
+        157.8491170075722
+      ],
+      "ch_median_ms": 157.8491170075722,
+      "ch_min_ms": 146.03314199484885,
+      "ch_max_ms": 225.48327900585718,
+      "speedup_ratio": 26.036646323536498,
+      "row_count_pg": 10,
+      "row_count_ch": 10
+    },
+    {
+      "query_key": "Q7_Window_Function",
+      "category": "Window function",
+      "description": "Month-over-month revenue trend analysis using LAG window function",
+      "pg_cold_ms": 1827.1414369955892,
+      "pg_warm_times_ms": [
+        1884.887465988868,
+        2453.269821999129,
+        3021.6015379992314,
+        2023.7518089998048,
+        1884.3430300039472
+      ],
+      "pg_median_ms": 2023.7518089998048,
+      "pg_min_ms": 1884.3430300039472,
+      "pg_max_ms": 3021.6015379992314,
+      "ch_cold_ms": 179.58174500381574,
+      "ch_warm_times_ms": [
+        180.95447499945294,
+        164.49941199971363,
+        213.21826700295787,
+        174.27025298820809,
+        188.10106899763923
+      ],
+      "ch_median_ms": 180.95447499945294,
+      "ch_min_ms": 164.49941199971363,
+      "ch_max_ms": 213.21826700295787,
+      "speedup_ratio": 11.18376215346939,
+      "row_count_pg": 36,
+      "row_count_ch": 36
+    },
+    {
+      "query_key": "Q8_Point_Lookup",
+      "category": "Point lookup / needle-in-haystack",
+      "description": "Single row retrieval by sale_id primary key index",
+      "pg_cold_ms": 7.897980001871474,
+      "pg_warm_times_ms": [
+        3.46037199778948,
+        3.5851139982696623,
+        3.962963994126767,
+        2.7418460085755214,
+        2.648042995133437
+      ],
+      "pg_median_ms": 3.46037199778948,
+      "pg_min_ms": 2.648042995133437,
+      "pg_max_ms": 3.962963994126767,
+      "ch_cold_ms": 61.807307007256895,
+      "ch_warm_times_ms": [
+        6.6446270066080615,
+        6.551733007654548,
+        5.5275129998335615,
+        6.133257993496954,
+        5.769281007815152
+      ],
+      "ch_median_ms": 6.133257993496954,
+      "ch_min_ms": 5.5275129998335615,
+      "ch_max_ms": 6.6446270066080615,
+      "speedup_ratio": 0.5641980170177882,
+      "row_count_pg": 1,
+      "row_count_ch": 1
+    }
+  ],
+  "concurrency": [
+    {
+      "concurrency": 1,
+      "pg_throughput_rps": 1.4493658348847944,
+      "pg_avg_latency_ms": 675.1102522495785,
+      "ch_throughput_rps": 11.688301401808467,
+      "ch_avg_latency_ms": 71.47847374944831
+    },
+    {
+      "concurrency": 4,
+      "pg_throughput_rps": 1.8536064913729435,
+      "pg_avg_latency_ms": 2117.2219719002896,
+      "ch_throughput_rps": 9.159146984093608,
+      "ch_avg_latency_ms": 338.6843434003822
+    },
+    {
+      "concurrency": 8,
+      "pg_throughput_rps": 1.7963113297777196,
+      "pg_avg_latency_ms": 4054.52096904919,
+      "ch_throughput_rps": 8.75268480509894,
+      "ch_avg_latency_ms": 693.7381451498368
+    }
+  ]
+}

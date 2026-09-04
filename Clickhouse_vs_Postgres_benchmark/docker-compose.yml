@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: benchmark_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: benchmark_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    shm_size: 1g
+    volumes:
+      - ./config/postgres.conf:/etc/postgresql/postgresql.conf:ro
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4g
+        reservations:
+          cpus: '2.0'
+          memory: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d benchmark_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: benchmark_clickhouse
+    restart: always
+    environment:
+      CLICKHOUSE_DB: benchmark_db
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: clickhouse
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - ./config/clickhouse.xml:/etc/clickhouse-server/config.d/custom.xml:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4g
+        reservations:
+          cpus: '2.0'
+          memory: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
