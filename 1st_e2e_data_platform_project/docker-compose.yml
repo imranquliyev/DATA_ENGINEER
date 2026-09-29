@@ -86,10 +86,13 @@ services:
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-46GadBkiBicSIip2Yzc7U-zW465_VGGBfV6_r9bE1_4=}
       AIRFLOW_ADMIN_USER: ${AIRFLOW_ADMIN_USER:-airflow}
       AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-airflow}
+      PYTHONPATH: /opt/airflow
+      _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-clickhouse-connect==0.7.3 pydantic-settings==2.2.1}
     ports:
       - "8080:8080"
     volumes:
       - ./src/orchestration/dags:/opt/airflow/dags
+      - ./src:/opt/airflow/src:ro
       - airflow_logs:/opt/airflow/logs
     command: >
       bash -c "airflow db migrate &&
@@ -112,8 +115,11 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-fastroute_user}:${POSTGRES_PASSWORD:-fastroute_password}@postgres:5432/${POSTGRES_DB:-fastroute_db}
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      PYTHONPATH: /opt/airflow
+      _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-clickhouse-connect==0.7.3 pydantic-settings==2.2.1}
     volumes:
       - ./src/orchestration/dags:/opt/airflow/dags
+      - ./src:/opt/airflow/src:ro
       - airflow_logs:/opt/airflow/logs
     command: airflow scheduler
 

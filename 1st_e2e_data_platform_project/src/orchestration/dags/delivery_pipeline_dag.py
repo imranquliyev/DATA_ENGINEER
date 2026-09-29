@@ -1,5 +1,11 @@
+import os
+import sys
 import uuid
 from datetime import datetime, timedelta
+
+# Ensure /opt/airflow is in python path
+sys.path.insert(0, "/opt/airflow")
+
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 
